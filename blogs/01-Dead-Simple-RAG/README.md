@@ -29,11 +29,19 @@ bun start
 Provide city name
 
 ```sh
-Enter your city: London
+Enter your city: Bangkok
 ```
 
 You should see the weather information for the city you entered.
 
 ```sh
-Retrieved weather: Weather: clear sky, 10 C, wind 4.1 km/h
+Good afternoon! It's a warm day in Bangkok with broken clouds and a temperature of 33.87°C. A light breeze of 5.37 km/h will provide a little relief from the heat. Remember to stay hydrated if you're heading out!
+```
+
+Different cities illicit different responses:
+
+```sh
+Enter your city: London
+
+Good morning! It's a cloudy start to the day in London with a temperature of 9.44°C and a light breeze. Consider bringing a light jacket if you're heading out.
 ```

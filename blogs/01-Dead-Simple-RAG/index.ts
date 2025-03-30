@@ -11,6 +11,9 @@ interface OpenWeatherResponse {
   weather: { description: string }[];
   main: { temp: number };
   wind: { speed: number };
+  dt: number;
+  timezone: number;
+  name: string;
 }
 
 if (!OPENWEATHER_API_KEY) {
@@ -30,7 +33,7 @@ function ask(question: string): Promise<string> {
   return new Promise((resolve) => rl.question(question, resolve));
 }
 
-async function getWeather(city: string): Promise<string> {
+async function getWeather(city: string): Promise<{ summary: string; time: string; city: string }> {
   const url = `${OPENWEATHER_API_URL}?q=${encodeURIComponent(
     city,
   )}&appid=${OPENWEATHER_API_KEY}&units=metric`;
@@ -44,8 +47,21 @@ async function getWeather(city: string): Promise<string> {
   const description = data.weather[0].description;
   const temp = data.main.temp;
   const wind = data.wind.speed;
+  const localTime = new Date((data.dt + data.timezone) * 1000);
+  const formattedTime = localTime.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC', // we've already applied the offset
+  });
 
-  return `Weather: ${description}, ${temp} C, wind ${wind} km/h`;
+  const summary = `Weather: ${description}, ${temp}°C, wind ${wind} km/h`;
+
+  return {
+    summary,
+    time: formattedTime,
+    city: data.name,
+  };
 }
 
 function extractGeminiText(data: any): string {
@@ -82,7 +98,6 @@ async function generateWithGemini(prompt: string): Promise<string> {
   });
 
   const data = await res.json();
-  console.log({ data });
 
   const text = extractGeminiText(data);
 
@@ -91,9 +106,19 @@ async function generateWithGemini(prompt: string): Promise<string> {
 
 async function main() {
   try {
-    const city = await ask('Entry your city: ');
-    const weatherInfo = await getWeather(city);
-    const prompt = `You are a helpful assistant.  Given the weather information below, generate a short summary for a user:\n${weatherInfo}\nSummary:`;
+    const cityInput = await ask('Enter your city: ');
+    const { summary, time, city } = await getWeather(cityInput);
+    const prompt = `
+      You are a friendly weather assistant. Greet user based on the time of day. Given the weather data, write a short 2-3 sentence warm summary about what kind of day it is.
+      
+      Add a recommendation to the user based on the weather if it's necessary.  Keep response on one line.
+
+      City: ${city}
+      Local time: ${time}
+      Weather: ${summary}
+      
+      Summary:
+    `;
     const response = await generateWithGemini(prompt);
 
     console.log(response);
