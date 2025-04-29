@@ -52,7 +52,7 @@ async function getWeather(city: string): Promise<{ summary: string; time: string
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
-    timeZone: 'UTC', // we've already applied the offset
+    timeZone: 'UTC',
   });
 
   const summary = `Weather: ${description}, ${temp}°C, wind ${wind} km/h`;
