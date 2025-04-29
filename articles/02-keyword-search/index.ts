@@ -78,7 +78,38 @@ async function getFiltersFromKeywords(input: string): Promise<SearchFilters | nu
   }
 }
 
-const filters = await getFiltersFromKeywords('detective comedy from 2014');
+function buildSqlFromFilters(filters: SearchFilters) {
+  const clauses: string[] = [];
+
+  if (filters.keywords?.length > 0) {
+    const likeClauses = filters.keywords.map(
+      (kw) => `(Name LIKE '%${kw}%' OR Summary LIKE '%${kw}%')`,
+    );
+    clauses.push(`(${likeClauses.join(' OR ')})`);
+  }
+
+  if (filters.year) clauses.push(`Year = ${filters.year}`);
+  if (filters.minYear) clauses.push(`Year >= ${filters.minYear}`);
+  if (filters.maxYear) clauses.push(`Year <= ${filters.maxYear}`);
+
+  const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+
+  return `SELECT * FROM shows ${where} LIMIT 3;`;
+}
+
+function displayResults(results: Show[]): void {
+  if (results.length === 0) {
+    console.log('\nNo results found.');
+    return;
+  }
+  console.log(`\nFound ${results.length} show(s):`);
+  results.forEach((show, i) => {
+    console.log(`\n--- Result ${i + 1} ---`);
+    console.log(`Name: ${show.Name} (${show.Year})`);
+    console.log(`Summary: ${show.Summary || 'N/A'}`);
+    console.log(`IMDB: ${show.IMDB || 'N/A'}`);
+  });
+}
 
 async function main() {
   const rl = readline.createInterface({ input, output });
@@ -92,6 +123,12 @@ async function main() {
 
     const filters = await getFiltersFromKeywords(input);
 
+    if (!filters) {
+      // alert user something went wrong
+      console.log('Invalid input');
+      continue;
+    }
+
     const sql = buildSqlFromFilters(filters);
     try {
       const results = db.query(sql).all() as Show[];
@@ -104,7 +141,7 @@ async function main() {
 
   db.close();
 
-  console.log('Database closed.');
+  console.log('See ya later!');
 }
 
 main().catch((err) => {
